@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Introduction to Web Workers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/theme/black.min.css">
+<style>
+  :root {
+    --amber:  #f5a623;
+    --green:  #4ecb8d;
+    --purple: #a78bfa;
+    --blue:   #60a5fa;
+    --red:    #f87171;
+    --bg:     #0a0a0f;
+    --bg2:    #10101a;
+    --bg3:    #181824;
+    --border: #2a2a3a;
+    --text:   #e8e8f0;
+    --muted:  #8888a8;
+  }
+  .reveal-viewport { background: var(--bg); }
+  .reveal .slides section { background: transparent; }
+  .reveal { font-family: 'DM Sans', sans-serif; color: var(--text); }
+  .reveal h1, .reveal h2, .reveal h3 { font-family: 'Playfair Display', serif; font-weight: 700; }
+  .reveal h1 { font-size: 1.6em; color: var(--amber); line-height: 1.1; }
+  .reveal h2 { font-size: 1.1em; color: var(--amber); margin-bottom: .2em; }
+  .reveal h3 { font-size: .78em; color: var(--green); margin-bottom: .15em; }
+  .reveal p  { font-size: .56em; line-height: 1.45; color: var(--text); }
+  .reveal li { font-size: .54em; line-height: 1.45; margin-bottom: .1em; }
+  .reveal code { font-family: 'JetBrains Mono', monospace; font-size: .72em; }
+  .reveal pre  { box-shadow: none; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: .3em .5em; margin: .25em 0; }
+  .reveal pre code { font-size: .52em; line-height: 1.35; background: transparent; color: #cdd6f4; }
+  .slide-hdr { display: flex; align-items: center; gap: .4em; border-bottom: 1px solid var(--border); padding-bottom: .2em; margin-bottom: .3em; }
+  .slide-hdr .tag { font-family: 'JetBrains Mono', monospace; font-size: .42em; font-weight: 500; color: var(--bg); background: var(--amber); padding: .1em .4em; border-radius: 3px; letter-spacing: .04em; }
+  .slide-hdr h2 { margin: 0; font-size: .95em; }
+  .cols { display: grid; gap: .5em; }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .cols-6040 { grid-template-columns: 6fr 4fr; }
+  .cols-4060 { grid-template-columns: 4fr 6fr; }
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: .35em .6em; }
+  .card.amber { border-left: 3px solid var(--amber); }
+  .card.green { border-left: 3px solid var(--green); }
+  .card.purple{ border-left: 3px solid var(--purple); }
+  .card.blue  { border-left: 3px solid var(--blue); }
+  .card.red   { border-left: 3px solid var(--red); }
+  .card h3 { font-size: .64em; margin: 0 0 .12em; }
+  .card p  { font-size: .52em; margin: 0; color: #b8b8d0; }
+  .card ul { margin: 0; padding-left: 1em; }
+  .card li { font-size: .52em; color: #b8b8d0; margin-bottom: .02em; }
+  .reveal table { width: 100%; border-collapse: collapse; font-size: .5em; }
+  .reveal table th { background: var(--bg3); color: var(--amber); font-weight: 600; padding: .2em .4em; border: 1px solid var(--border); text-align: left; }
+  .reveal table td { padding: .18em .4em; border: 1px solid var(--border); color: #ccc; }
+  .reveal table tr:nth-child(even) td { background: #0e0e18; }
+  .a  { color: var(--amber); font-weight: 600; }
+  .g  { color: var(--green); font-weight: 600; }
+  .p  { color: var(--purple); font-weight: 600; }
+  .b  { color: var(--blue); font-weight: 600; }
+  .r  { color: var(--red); font-weight: 600; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  svg.diagram { display: block; margin: 0 auto; overflow: visible; }
+  .pill { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: .44em; padding: .08em .4em; border-radius: 99px; border: 1px solid; margin: 0 .08em; }
+  .pill.amber { color: var(--amber); border-color: var(--amber); }
+  .pill.green { color: var(--green); border-color: var(--green); }
+  .pill.purple{ color: var(--purple); border-color: var(--purple); }
+  .pill.blue  { color: var(--blue); border-color: var(--blue); }
+  .reveal .slide-footer { display: none; }
+  .title-slide h1 { font-size: 1.8em; }
+  .title-slide .subtitle { font-size: .7em; color: var(--green); font-family: 'DM Sans', sans-serif; font-weight: 300; letter-spacing: .04em; margin: .3em 0 .6em; }
+  .title-slide .meta { font-size: .48em; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .reveal ul, .reveal ol { margin: .15em 0 .15em 1em; }
+  .reveal .slides > section { display: flex !important; flex-direction: column !important; overflow-y: auto !important; align-items: stretch !important; justify-content: flex-start !important; }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ============ SLIDE 01 — TITLE ============ -->
+<section class="title-slide" data-background-color="#0a0a0f">
+  <div style="text-align:left; max-width:820px; margin:0 auto; padding: 1em 0;">
+    <div style="font-family:'JetBrains Mono',monospace; font-size:.5em; color:var(--muted); margin-bottom:.4em; letter-spacing:.1em;">
+      TECHNICAL PRESENTATION
+    </div>
+    <h1>Introduction to<br>Web Workers</h1>
+    <div class="subtitle">Background Threads, Service Workers &amp; Offline-First Web Apps</div>
+    <div style="width:60px; height:3px; background:var(--amber); margin-bottom:1.4em;"></div>
+    <div class="meta">Dedicated Workers &middot; Shared Workers &middot; Service Workers &middot; Cache API &middot; PWA</div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 02 — AGENDA ============ -->
+<section>
+  <div class="slide-hdr"><span class="tag">02</span><h2>Agenda</h2></div>
+  <div class="cols cols-2">
+    <div class="card amber">
+      <h3>Part I &mdash; Foundations</h3>
+      <ul>
+        <li>The single-threaded problem</li>
+        <li>What are Web Workers?</li>
+        <li>Worker types overview</li>
+      </ul>
+    </div>
+    <div class="card green">
+      <h3>Part II &mdash; Dedicated Workers</h3>
+      <ul>
+        <li>Creating &amp; messaging workers</li>
+        <li>Structured clone &amp; transferables</li>
+        <li>Scope, limitations &amp; real-world use</li>
+      </ul>
+    </div>
+    <div class="card purple">
+      <h3>Part III &mdash; Service Workers</h3>
+      <ul>
+        <li>Lifecycle: install, activate, fetch</li>
+        <li>Cache API &amp; caching strategies</li>
+        <li>Offline-first &amp; push notifications</li>
+      </ul>
+    </div>
+    <div class="card blue">
+      <h3>Part IV &mdash; Advanced</h3>
+      <ul>
+        <li>Progressive Web Apps</li>
+        <li>Workbox library</li>
+        <li>Debugging &amp; performance patterns</li>
+      </ul>
+    </div>
+  </div>
+  <p style="margin-top:.4em; color:var(--muted); font-size:.46em;">20 slides &middot; Covers dedicated, shared &amp; service workers with live code examples, SVG diagrams &amp; best practices.</p>
+</section>
+
+<!-- ============ SLIDE 03 — SINGLE-THREADED PROBLEM ============ -->
+<section>
+  <div class="slide-hdr"><span class="tag">03</span><h2>The Single-Threaded Problem</h2></div>
+  <div class="cols cols-6040">
+    <div>
+      <p>JavaScript runs on a <span class="a">single main thread</span>. Every task &mdash; DOM updates, event handlers, network callbacks, layout, painting &mdash; shares that one thread.</p>
+      <div class="card red" style="margin-top:.3em;">
+        <h3>The 16ms Budget</h3>
+        <p>To hit <span class="g">60 fps</span>, each frame must complete in ~16.6ms. A heavy computation blocks the entire UI &mdash; scroll jank, frozen inputs, dropped frames.</p>
+      </div>
+      <pre><code class="language-javascript">// Blocks UI for seconds!
+function fibonacci(n) {
+  if (n <= 1) return n;
+  return fibonacci(n - 1) + fibonacci(n - 2);
+}
+fibonacci(45); // main thread frozen</code></pre>
+    </div>
+    <div>
+      <svg class="diagram" viewBox="0 0 340 360" width="320">
+        <rect x="10" y="10" width="320" height="50" rx="6" fill="#181824" stroke="#2a2a3a"/>
+        <text x="170" y="40" text-anchor="middle" fill="#f5a623" font-family="Playfair Display" font-size="15" font-weight="700">Main Thread Timeline</text>
+        <rect x="20" y="80" width="80" height="30" rx="4" fill="#4ecb8d" opacity="0.8"/>
+        <text x="60" y="100" text-anchor="middle" fill="#0a0a0f" font-family="JetBrains Mono" font-size="10">JS Event</text>
+        <rect x="105" y="80" width="60" height="30" rx="4" fill="#60a5fa" opacity="0.8"/>
+        <text x="135" y="100" text-anchor="middle" fill="#0a0a0f" font-family="JetBrains Mono" font-size="10">Layout</text>
+        <rect x="170" y="80" width="50" height="30" rx="4" fill="#a78bfa" opacity="0.8"/>
+        <text x="195" y="100" text-anchor="middle" fill="#0a0a0f" font-family="JetBrains Mono" font-size="10">Paint</text>
+        <line x1="225" y1="95" x2="310" y2="95" stroke="#f5a623" stroke-width="2" stroke-dasharray="5,3"/>
+        <text x="268" y="90" text-anchor="middle" fill="#8888a8" font-family="JetBrains Mono" font-size="9">16ms</text>
+        <text x="170" y="140" text-anchor="middle" fill="#f87171" font-family="DM Sans" font-size="12" font-weight="600">With heavy computation:</text>
+        <rect x="20" y="160" width="290" height="30" rx="4" fill="#f87171" opacity="0.7"/>
+        <text x="165" y="180" text-anchor="middle" fill="#0a0a0f" font-family="JetBrains Mono" font-size="10">fibonacci(45) — 3200ms BLOCKED</text>
+        <rect x="20" y="195" width="80" height="20" rx="3" fill="#2a2a3a"/>
+        <text x="60" y="209" text-anchor="middle" fill="#8888a8" font-family="JetBrains Mono" font-size="8">No layout</text>
+        <rect x="105" y="195" width="80" height="20" rx="3" fill="#2a2a3a"/>
+        <text x="145" y="209" text-anchor="middle" fill="#8888a8" font-family="JetBrains Mono" font-size="8">No paint</text>
+        <rect x="190" y="195" width="120" height="20" rx="3" fill="#2a2a3a"/>
+        <text x="250" y="209" text-anchor="middle" fill="#8888a8" font-family="JetBrains Mono" font-size="8">User input lost</text>
+        <text x="170" y="250" text-anchor="middle" fill="#4ecb8d" font-family="DM Sans" font-size="12" font-weight="600">With Web Worker:</text>
+        <rect x="20" y="265" width="80" height="30" rx="4" fill="#4ecb8d" opacity="0.8"/>
+        <text x="60" y="285" text-anchor="middle" fill="#0a0a0f" font-family="JetBrains Mono" font-size="10">JS Event</text>
+        <rect x="105" y="265" width="60" height="30" rx="4" fill="#60a5fa" opacity="0.8"/>
+        <text x="135" y="285" text-anchor="middle" fill="#0a0a0f" font-family="JetBrains Mono" font-size="10">Layout</text>
+        <rect x="170" y="265" width="50" height="30" rx="4" fill="#a78bfa" opacity="0.8"/>
+        <text x="195" y="285" text-anchor="middle" fill="#0a0a0f" font-family="JetBrains Mono" font-size="10">Paint</text>
+        <rect x="20" y="305" width="200" height="25" rx="4" fill="#f5a623" opacity="0.3" stroke="#f5a623" stroke-dasharray="4,2"/>
+        <text x="120" y="322" text-anchor="middle" fill="#f5a623" font-family="JetBrains Mono" font-size="9">Worker: fibonacci(45) — separate thread</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 04 — WHAT ARE WEB WORKERS ============ -->
+<section>
+  <div class="slide-hdr"><span class="tag">04</span><h2>What Are Web Workers?</h2></div>
+  <p>Web Workers run JavaScript in <span class="a">background threads</span>, separate from the main UI thread. They communicate via <span class="g">message passing</span> and cannot access the DOM directly.</p>
+  <table>
+    <thead>
+      <tr><th>Type</th><th>Scope</th><th>Lifetime</th><th>Use Case</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><span class="a">Dedicated Worker</span></td><td>Single page</td><td>While page is open</td><td>Heavy computation, parsing, image processing</td></tr>
+      <tr><td><span class="g">Shared Worker</span></td><td>Multiple pages (same origin)</td><td>While any tab is open</td><td>Shared state across tabs, WebSocket pooling</td></tr>
+      <tr><td><span class="p">Service Worker</span></td><td>Origin-wide proxy</td><td>Event-driven (outlives tabs)</td><td>Offline caching, push notifications, background sync</td></tr>
+    </tbody>
+  </table>
+  <div class="cols cols-3" style="margin-top:.3em;">
+    <div class="card amber">
+      <h3>Browser Support</h3>
+      <p>All modern browsers. Dedicated Workers since IE10. Service Workers since 2018 across all major engines.</p>
+    </div>
+    <div class="card green">
+      <h3>Thread Model</h3>
+      <p>Each worker gets its own event loop, global scope (<code>self</code>), and JS execution context. No shared memory by default.</p>
+    </div>
+    <div class="card purple">
+      <h3>Security</h3>
+      <p>Workers obey <span class="b">same-origin policy</span>. Service workers require HTTPS (except localhost). No <code>eval()</code> from strings in some contexts.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 05 — DEDICATED WORKERS ============ -->
+<section>
+  <div class="slide-hdr"><span class="tag">05</span><h2>Dedicated Workers</h2></div>
+  <div class="cols cols-2">
+    <div>
+      <h3>Main Thread (index.js)</h3>
+      <pre><code class="language-javascript">// Create a dedicated worker
+const worker = new Worker('worker.js');
+
+// Send data to the worker
+worker.postMessage({
+  task: 'fibonacci',
+  value: 45
+});
+
+// Receive results back
+worker.onmessage = (event) => {
+  console.log('Result:', event.data);
+  // UI remains responsive!
+};
+
+// Handle errors
+worker.onerror = (err) => {
+  console.error('Worker error:', err.message);
+};
+
+// Terminate when done
+worker.terminate();</code></pre>
+    </div>
+    <div>
+      <h3>Worker Thread (worker.js)</h3>
+      <pre><code class="language-javascript">// Worker has its own global scope: `self`
+self.onmessage = function(event) {
+  const { task, value } = event.data;
+
+  if (task === 'fibonacci') {
+    const result = fibonacci(value);
+    // Send result back to main thread
+    self.postMessage(result);
+  }
+};
+
+function fibonacci(n) {
+  if (n <= 1) return n;
+  return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+// Workers can also close themselves
+// self.close();</code></pre>
+      <div class="card green" style="margin-top:.3em;">
+        <h3>Inline Workers (Blob URL)</h3>
+        <pre><code class="language-javascript">const blob = new Blob([`
+  self.onmessage = (e) => {
+    self.postMessage(e.data * 2);
+  };
+`], { type: 'application/javascript' });
+const w = new Worker(URL.createObjectURL(blob));</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 06 — MESSAGE PASSING ============ -->
+<section>
+  <div class="slide-hdr"><span class="tag">06</span><h2>Message Passing</h2></div>
+  <div class="cols cols-2">
+    <div>
+      <div class="card amber">
+        <h3>Structured Clone Algorithm</h3>
+        <p>Data sent via <code>postMessage</code> is deep-copied using the structured clone algorithm. Supports objects, arrays, Maps, Sets, Dates, Blobs, ArrayBuffers, and more.</p>
+        <ul>
+          <li>Functions, DOM nodes, and Error objects <span class="r">cannot</span> be cloned</li>
+          <li>Prototype chains are <span class="r">not preserved</span></li>
+          <li>Cloning large data has a <span class="a">performance cost</span></li>
+        </ul>
+      </div>
+      <pre><code class="language-javascript">// Structured clone — data is COPIED
+worker.postMessage({
+  pixels: new Uint8Array(4_000_000),
+  metadata: { width: 1000, height: 1000 }
+});
+// Both threads have separate copies</code></pre>
+    </div>
+    <div>
+      <div class="card green">
+        <h3>Transferable Objects</h3>
+        <p><span class="g">Zero-copy</span> transfer of ownership. The sending context loses access to the data. Orders of magnitude faster for large buffers.</p>
+      </div>
+      <pre><code class="language-javascript">// Transfer — data is MOVED (zero-copy)
+const buffer = new ArrayBuffer(32_000_000);
+
+worker.postMessage(buffer, [buffer]);
+// buffer.byteLength === 0 now!
+
+// Transfer multiple objects
+const ab1 = new ArrayBuffer(1024);
+const ab2 = new ArrayBuffer(2048);
+worker.postMessage(
+  { a: ab1, b: ab2 },
+  [ab1, ab2]  // transfer list
+);</code></pre>
+      <div class="card purple" style="margin-top:.3em;">
+        <h3>Transferable Types</h3>
+        <ul>
+          <li><code>ArrayBuffer</code> &mdash; raw binary data</li>
+          <li><code>MessagePort</code> &mdash; channel endpoints</li>
+          <li><code>OffscreenCanvas</code> &mdash; canvas rendering</li>
+          <li><code>ImageBitmap</code> &mdash; decoded images</li>
+          <li><code>ReadableStream</code> / <code>WritableStream</code></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 07 — WORKER SCOPE & LIMITATIONS ============ -->
+<section>
+  <div class="slide-hdr"><span class="tag">07</span><h2>Worker Scope &amp; Limitations</h2></div>
+  <div class="cols cols-6040">
+    <div>
+      <table>
+        <thead>
+          <tr><th>Available in Workers</th><th>NOT Available</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>fetch()</code>, <code>XMLHttpRequest</code></td><td><code>document</code>, <code>window</code></td></tr>
+          <tr><td><code>setTimeout</code> / <code>setInterval</code></td><td>DOM APIs (<code>querySelector</code>, etc.)</td></tr>
+          <tr><td><code>IndexedDB</code></td><td><code>localStorage</code> / <code>sessionStorage</code></td></tr>
+          <tr><td><code>WebSocket</code></td><td><code>alert()</code> / <code>confirm()</code></td></tr>
+          <tr><td><code>crypto</code>, <code>TextEncoder</code></td><td><code>document.cookie</code></td></tr>
+          <tr><td><code>importScripts()</code></td><td>Parent scope variables</td></tr>
+          <tr><td><code>navigator</code> (subset)</td><td><code>window.getComputedStyle</code></td></tr>
+          <tr><td><code>Cache</code> API</td><td>Any rendering / layout APIs</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="card amber">
+        <h3>importScripts()</h3>
+        <pre><code class="language-javascript">// Classic workers: sync imports
+importScripts(
+  'utils.js',
+  'parser.js'
+);</code></pre>
+      </div>
+      <div class="card green" style="margin-top:.3em;">
+        <h3>ES Modules in Workers</h3>
+        <pre><code class="language-javascript">// Module workers (modern)
+const w = new Worker('worker.js', {
+  type: 'module'
+});
+
+// Inside worker.js:
+import { parse } from './parser.js';
+import _ from 'https://esm.sh/lodash';</code></pre>
+      </div>
+      <div class="card purple" style="margin-top:.3em;">
+        <h3>WorkerGlobalScope</h3>
+        <p><code>self</code> refers to the worker's own global. Key properties: <code>self.name</code>, <code>self.location</code>, <code>self.navigator</code>, <code>self.performance</code>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 08 — REAL-WORLD HEAVY COMPUTATION ============ -->
+<section>
+  <div class="slide-hdr"><span class="tag">08</span><h2>Real-World: Heavy Computation</h2></div>
+  <div class="cols cols-3">
+    <div class="card amber">
+      <h3>Image Processing</h3>
+      <pre><code class="language-javascript">// worker-image.js
+self.onmessage = ({ data }) => {
+  const { pixels, width, height } = data;
+  const d = new Uint8ClampedArray(pixels);
+
+  // Grayscale filter
+  for (let i = 0; i < d.length; i += 4) {
+    const avg = (d[i] + d[i+1] + d[i+2]) / 3;
+    d[i] = d[i+1] = d[i+2] = avg;
+  }
+
+  self.postMessage(
+    d.buffer, [d.buffer]  // transfer
+  );
+};</code></pre>
+    </div>
+    <div class="card green">
+      <h3>CSV Parsing</h3>
+      <pre><code class="language-javascript">// worker-csv.js
+self.onmessage = ({ data }) => {
+  const rows = data.csv.split('\n');
+  const headers = rows[0].split(',');
+  const records = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const vals = rows[i].split(',');
+    const obj = {};
+    headers.forEach((h, j) => {
+      obj[h.trim()] = vals[j]?.trim();
+    });
+    records.push(obj);
+  }
+
+  self.postMessage({ records });
+};</code></pre>
+    </div>
+    <div class="card purple">
+      <h3>Cryptography</h3>
+      <pre><code class="language-javascript">// worker-crypto.js
+self.onmessage = async ({ data }) => {
+  const encoder = new TextEncoder();
+  const msgBuf = encoder.encode(data.text);
+
+  // SHA-256 hashing
+  const hashBuf = await crypto.subtle
+    .digest('SHA-256', msgBuf);
+
+  const hashArr = Array.from(
+    new Uint8Array(hashBuf)
+  );
+  const hex = hashArr
+    .map(b => b.toString(16).padStart(2,'0'))
+    .join('');
+
+  self.postMessage({ hash: hex });
+};</code></pre>
+    </div>
+  </div>
+  <div class="card blue" style="margin-top:.3em;">
+    <h3>Pattern: Progress Reporting</h3>
+    <pre><code class="language-javascript">// Worker sends periodic progress updates
+for (let i = 0; i < total; i++) {
+  processItem(items[i]);
+  if (i % 1000 === 0) self.postMessage({ type: 'progress', done: i, total });
+}
+self.postMessage({ type: 'complete', result: output });</code></pre>
+  </div>
+</section>
+
+<!-- ============ SLIDE 09 — SHARED WORKERS ============ -->
+<section>
+  <div class="slide-hdr"><span class="tag">09</span><h2>Shared Workers</h2></div>
+  <div class="cols cols-6040">
+    <div>
+      <p>A <span class="a">SharedWorker</span> is shared across all pages/tabs/iframes of the <span class="g">same origin</span>. Each connection gets a unique <code>MessagePort</code>.</p>
+      <h3>Connecting from Pages</h3>
+      <pre><code class="language-javascript">// page-a.js (Tab 1) and page-b.js (Tab 2)
+const shared = new SharedWorker('shared.js');
+const port = shared.port;
+
+port.onmessage = (e) => {
+  console.log('Received:', e.data);
+};
+
+port.postMessage({ user: 'Tab1', action: 'join' });
+port.start(); // required if using addEventListener</code></pre>
+      <h3>Shared Worker Script</h3>
+      <pre><code class="language-javascript">// shared.js
+const ports = [];
+
+self.onconnect = (event) => {
+  const port = event.ports[0];
+  ports.push(port);
+
+  port.onmessage = (e) => {
+    // Broadcast to all connected tabs
+    ports.forEach(p => {
+      p.postMessage({
+        from: e.data.user,
+        msg: e.data.action,
+        connections: ports.length
+      });
+    });
+  };
+};</code></pre>
+    </div>
+    <div>
+      <svg class="diagram" viewBox="0 0 300 340" width="280">
+        <rect x="10" y="10" width="120" height="50" rx="6" fill="#181824" stroke="#60a5fa"/>
+        <text x="70" y="40" text-anchor="middle" fill="#60a5fa" font-family="JetBrains Mono" font-size="11">Tab A</text>
+        <rect x="170" y="10" width="120" height="50" rx="6" fill="#181824" stroke="#60a5fa"/>
+        <text x="230" y="40" text-anchor="middle" fill="#60a5fa" font-family="JetBrains Mono" font-size="11">Tab B</text>
+        <rect x="10" y="80" width="120" height="50" rx="6" fill="#181824" stroke="#60a5fa"/>
+        <text x="70" y="110" text-anchor="middle" fill="#60a5fa" font-family="JetBrains Mono" font-size="11">Tab C</text>
+        <rect x="80" y="180" width="140" height="55" rx="8" fill="#10101a" stroke="#f5a623" stroke-width="2"/>
+        <text x="150" y="203" text-anchor="middle" fill="#f5a623" font-family="Playfair Display" font-size="12" font-weight="700">SharedWorker</text>
+        <text x="150" y="220" text-anchor="middle" fill="#8888a8" font-family="JetBrains Mono" font-size="9">shared.js</text>
+        <line x1="70" y1="60" x2="120" y2="180" stroke="#4ecb8d" stroke-width="1.5"/>
+        <line x1="230" y1="60" x2="180" y2="180" stroke="#4ecb8d" stroke-width="1.5"/>
+        <line x1="70" y1="130" x2="120" y2="180" stroke="#4ecb8d" stroke-width="1.5"/>
+        <text x="55" y="125" fill="#4ecb8d" font-family="JetBrains Mono" font-size="8">port</text>
+        <text x="90" y="73" fill="#4ecb8d" font-family="JetBrains Mono" font-size="8">port</text>
+        <text x="195" y="73" fill="#4ecb8d" font-family="JetBrains Mono" font-size="8">port</text>
+        <rect x="50" y="260" width="200" height="65" rx="6" fill="#181824" stroke="#2a2a3a"/>
+        <text x="150" y="280" text-anchor="middle" fill="#a78bfa" font-family="DM Sans" font-size="11" font-weight="600">Use Cases</text>
+        <text x="150" y="298" text-anchor="middle" fill="#b8b8d0" font-family="DM Sans" font-size="9">WebSocket connection pooling</text>
+        <text x="150" y="312" text-anchor="middle" fill="#b8b8d0" font-family="DM Sans" font-size="9">Cross-tab state synchronisation</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 10 — SERVICE WORKERS LIFECYCLE ============ -->
+<section>
+  <div class="slide-hdr"><span class="tag">10</span><h2>Service Workers &mdash; Lifecycle</h2></div>
+  <svg class="diagram" viewBox="0 0 900 140" width="900">
+    <rect x="10" y="30" width="130" height="50" rx="8" fill="#10101a" stroke="#a78bfa" stroke-width="2"/>
+    <text x="75" y="60" text-anchor="middle" fill="#a78bfa" font-family="JetBrains Mono" font-size="13">register()</text>
+    <line x1="140" y1="55" x2="185" y2="55" stroke="#4ecb8d" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="185" y="30" width="130" height="50" rx="8" fill="#10101a" stroke="#f5a623" stroke-width="2"/>
+    <text x="250" y="55" text-anchor="middle" fill="#f5a623" font-family="JetBrains Mono" font-size="13">installing</text>
+    <text x="250" y="100" text-anchor="middle" fill="#8888a8" font-family="DM Sans" font-size="10">event: install</text>
+    <text x="250" y="115" text-anchor="middle" fill="#8888a8" font-family="DM Sans" font-size="10">Pre-cache assets</text>
+    <line x1="315" y1="55" x2="365" y2="55" stroke="#4ecb8d" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="365" y="30" width="130" height="50" rx="8" fill="#10101a" stroke="#60a5fa" stroke-width="2"/>
+    <text x="430" y="55" text-anchor="middle" fill="#60a5fa" font-family="JetBrains Mono" font-size="13">waiting</text>
+    <text x="430" y="100" text-anchor="middle" fill="#8888a8" font-family="DM Sans" font-size="10">Old SW still active</text>
+    <text x="430" y="115" text-anchor="middle" fill="#8888a8" font-family="DM Sans" font-size="10">skipWaiting() to bypass</text>
+    <line x1="495" y1="55" x2="545" y2="55" stroke="#4ecb8d" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="545" y="30" width="130" height="50" rx="8" fill="#10101a" stroke="#4ecb8d" stroke-width="2"/>
+    <text x="610" y="55" text-anchor="middle" fill="#4ecb8d" font-family="JetBrains Mono" font-size="13">activating</text>
+    <text x="610" y="100" text-anchor="middle" fill="#8888a8" font-family="DM Sans" font-size="10">event: activate</text>
+    <text x="610" y="115" text-anchor="middle" fill="#8888a8" font-family="DM Sans" font-size="10">Clean old caches</text>
+    <line x1="675" y1="55" x2="725" y2="55" stroke="#4ecb8d" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="725" y="30" width="130" height="50" rx="8" fill="#10101a" stroke="#f5a623" stroke-width="2"/>
+    <text x="790" y="55" text-anchor="middle" fill="#f5a623" font-family="JetBrains Mono" font-size="13">activated</text>
+    <text x="790" y="100" text-anchor="middle" fill="#8888a8" font-family="DM Sans" font-size="10">Intercepts fetch,</text>
+    <text x="790" y="115" text-anchor="middle" fill="#8888a8" font-family="DM Sans" font-size="10">push, sync events</text>
+    <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#4ecb8d"/></marker></defs>
+  </svg>
+  <div class="cols cols-2" style="margin-top:.3em;">
+    <div class="card amber">
+      <h3>Key Concepts</h3>
+      <ul>
+        <li>Service workers act as a <span class="a">network proxy</span> between the browser and server</li>
+        <li>They run in a <span class="g">separate thread</span> and have no DOM access</li>
+        <li>They are <span class="p">event-driven</span> &mdash; the browser starts/stops them as needed</li>
+        <li>Require <span class="b">HTTPS</span> in production (localhost exempt)</li>
+        <li>Can outlive the page &mdash; respond to push/sync even when tab is closed</li>
+      </ul>
+    </div>
+    <div class="card green">
+      <h3>Events a Service Worker Handles</h3>
+      <ul>
+        <li><code>install</code> &mdash; Pre-cache critical assets</li>
+        <li><code>activate</code> &mdash; Clean up old cache versions</li>
+        <li><code>fetch</code> &mdash; Intercept network requests</li>
+        <li><code>push</code> &mdash; Receive push messages from server</li>
+        <li><code>sync</code> &mdash; Background sync when connectivity returns</li>
+        <li><code>message</code> &mdash; Communicate with controlled pages</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 11 — SERVICE WORKER REGISTRATION ============ -->
+<section>
+  <div class="slide-hdr"><span class="tag">11</span><h2>Service Worker Registration</h2></div>
+  <div class="cols cols-6040">
+    <div>
+      <h3>Registering the Service Worker</h3>
+      <pre><code class="language-javascript">// main.js — register on page load
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register(
+        '/sw.js',
+        { scope: '/' }  // controls which URLs it intercepts
+      );
+
+      console.log('SW registered, scope:', reg.scope);
+
+      // Check for updates
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        newSW.addEventListener('statechange', () => {
+          if (newSW.state === 'activated') {
+            // New version ready — prompt reload?
+            showUpdateBanner();
+          }
+        });
+      });
+    } catch (err) {
+      console.error('SW registration failed:', err);
+    }
+  });
+}</code></pre>
+    </div>
+    <div>
+      <h3>Service Worker Shell</h3>
+      <pre><code class="language-javascript">// sw.js
+const CACHE_NAME = 'app-v2';
+
+self.addEventListener('install', (event) => {
+  console.log('SW installing...');
+  // Skip waiting to activate immediately
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  console.log('SW activating...');
+  // Claim all open clients
+  event.waitUntil(
+    clients.claim()
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  // Intercept every network request
+  event.respondWith(
+    handleFetch(event.request)
+  );
+});</code></pre>
+      <div class="card red" style="margin-top:.3em;">
+        <h3>Scope Gotcha</h3>
+        <p>A SW at <code>/app/sw.js</code> can only control URLs under <code>/app/</code>. Place <code>sw.js</code> at the root for full-site control, or use the <code>Service-Worker-Allowed</code> header.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 12 — CACHE API ============ -->
+<section>
+  <div class="slide-hdr"><span class="tag">12</span><h2>Cache API</h2></div>
+  <div class="cols cols-2">
+    <div>
+      <div class="card amber">
+        <h3>Cache Storage Basics</h3>
+        <p>The Cache API provides a persistent key-value store where keys are <code>Request</code> objects and values are <code>Response</code> objects. Independent of HTTP cache.</p>
+      </div>
+      <pre><code class="language-javascript">// Pre-cache during install
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open('static-v1').then(cache => {
+      return cache.addAll([
+        '/',
+        '/index.html',
+        '/styles.css',
+        '/app.js',
+        '/logo.png',
+        '/offline.html'
+      ]);
+    })
+  );
+});</code></pre>
+      <pre><code class="language-javascript">// Clean old caches during activate
+self.addEventListener('activate', (event) => {
+  const keep = ['static-v2', 'dynamic-v1'];
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys.filter(k => !keep.includes(k))
+            .map(k => caches.delete(k))
+      )
+    )
+  );
+});</code></pre>
+    </div>
+    <div>
+      <h3>Core Cache Methods</h3>
+      <table>
+        <thead><tr><th>Method</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>caches.open(name)</code></td><td>Open/create a named cache</td></tr>
+          <tr><td><code>cache.add(url)</code></td><td>Fetch &amp; store a response</td></tr>
+          <tr><td><code>cache.addAll(urls)</code></td><td>Fetch &amp; store multiple</td></tr>
+          <tr><td><code>cache.put(req, res)</code></td><td>Manually store a pair</td></tr>
+          <tr><td><code>cache.match(req)</code></td><td>Find matching response</td></tr>
+          <tr><td><code>cache.delete(req)</code></td><td>Remove a cached item</td></tr>
+          <tr><td><code>cache.keys()</code></td><td>List all cached requests</td></tr>
+        </tbody>
+      </table>
+      <pre><code class="language-javascript">// Dynamic caching during fetch
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request).then(cached => {
+      if (cached) return cached;
+
+      return fetch(event.request).then(response => {
+        const clone = response.clone();
+        caches.open('dynamic-v1').then(cache => {
+          cache.put(event.request, clone);
+        });
+        return response;
+      });
+    })
+  );
+});</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 13 — CACHING STRATEGIES ============ -->
+<section>
+  <div class="slide-hdr"><span class="tag">13</span><h2>Caching Strategies</h2></div>
+  <div class="cols cols-2">
+    <div class="card amber">
+      <h3>Cache First (Cache Falling Back to Network)</h3>
+      <p>Best for: static assets, fonts, images. Fast loads from cache; network only if cache miss.</p>
+      <pre><code class="language-javascript">async function cacheFirst(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+  const response = await fetch(request);
+  const cache = await caches.open('static-v1');
+  cache.put(request, response.clone());
+  return response;
+}</code></pre>
+    </div>
+    <div class="card green">
+      <h3>Network First (Network Falling Back to Cache)</h3>
+      <p>Best for: API calls, frequently updated content. Fresh data when online; cached fallback offline.</p>
+      <pre><code class="language-javascript">async function networkFirst(request) {
+  try {
+    const response = await fetch(request);
+    const cache = await caches.open('dynamic-v1');
+    cache.put(request, response.clone());
+    return response;
+  } catch (err) {
+    return caches.match(request);
+  }
+}</code></pre>
+    </div>
+    <div class="card purple">
+      <h3>Stale-While-Revalidate</h3>
+      <p>Best for: semi-dynamic content (avatars, articles). Instant response from cache + background update.</p>
+      <pre><code class="language-javascript">async function staleWhileRevalidate(request) {
+  const cache = await caches.open('swr-v1');
+  const cached = await cache.match(request);
+  const fetchPromise = fetch(request).then(res => {
+    cache.put(request, res.clone());
+    return res;
+  });
+  return cached || fetchPromise;
+}</code></pre>
+    </div>
+    <div class="card blue">
+      <h3>Cache Only / Network Only</h3>
+      <p><span class="a">Cache Only</span>: pre-cached assets that never change. <span class="g">Network Only</span>: non-GET requests, analytics pings.</p>
+      <pre><code class="language-javascript">// Cache only
+const cacheOnly = (req) => caches.match(req);
+
+// Network only
+const networkOnly = (req) => fetch(req);</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 14 — OFFLINE-FIRST ARCHITECTURE ============ -->
+<section>
+  <div class="slide-hdr"><span class="tag">14</span><h2>Offline-First Architecture</h2></div>
+  <div class="cols cols-6040">
+    <div>
+      <div class="card amber">
+        <h3>App Shell Model</h3>
+        <p>Pre-cache the minimal HTML, CSS, JS <span class="a">"shell"</span> at install time. Dynamic content loaded separately. Shell renders instantly even offline.</p>
+      </div>
+      <pre><code class="language-javascript">// sw.js — App Shell caching
+const SHELL_ASSETS = [
+  '/shell.html',
+  '/css/app.css',
+  '/js/app.js',
+  '/js/router.js',
+  '/images/logo.svg'
+];
+
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open('shell-v3')
+      .then(c => c.addAll(SHELL_ASSETS))
+  );
+});
+
+// Navigate requests → shell
+self.addEventListener('fetch', (e) => {
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      caches.match('/shell.html')
+    );
+    return;
+  }
+  // Other requests: strategy per type...
+});</code></pre>
+    </div>
+    <div>
+      <div class="card green">
+        <h3>Background Sync API</h3>
+        <p>Queue operations when offline, replay when connectivity returns. User never sees a failure.</p>
+      </div>
+      <pre><code class="language-javascript">// Register a sync event
+async function saveComment(data) {
+  // Save to IndexedDB first
+  await db.comments.add(data);
+
+  // Request background sync
+  const reg = await navigator
+    .serviceWorker.ready;
+  await reg.sync.register('sync-comments');
+}
+
+// sw.js — handle sync
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-comments') {
+    event.waitUntil(
+      pushPendingComments()
+    );
+  }
+});</code></pre>
+      <div class="card purple" style="margin-top:.3em;">
+        <h3>Offline Fallback Pattern</h3>
+        <pre><code class="language-javascript">// Serve offline page for nav failures
+e.respondWith(
+  fetch(e.request).catch(() =>
+    caches.match('/offline.html')
+  )
+);</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 15 — PUSH NOTIFICATIONS ============ -->
+<section>
+  <div class="slide-hdr"><span class="tag">15</span><h2>Push Notifications</h2></div>
+  <div class="cols cols-2">
+    <div>
+      <h3>1. Subscribe (Client-Side)</h3>
+      <pre><code class="language-javascript">// Request notification permission
+const permission = await Notification.requestPermission();
+if (permission !== 'granted') return;
+
+// Subscribe to push
+const reg = await navigator.serviceWorker.ready;
+const subscription = await reg.pushManager.subscribe({
+  userVisibleNotification: true,
+  applicationServerKey: urlBase64ToUint8Array(
+    'BEl62iUYgUivxIkv69yViE...' // VAPID public key
+  )
+});
+
+// Send subscription to your server
+await fetch('/api/push/subscribe', {
+  method: 'POST',
+  body: JSON.stringify(subscription),
+  headers: { 'Content-Type': 'application/json' }
+});</code></pre>
+      <div class="card blue" style="margin-top:.3em;">
+        <h3>VAPID Keys</h3>
+        <p>Voluntary Application Server Identification. A key pair that identifies your server to the push service. Generate with <code>web-push generate-vapid-keys</code>.</p>
+      </div>
+    </div>
+    <div>
+      <h3>2. Handle Push (Service Worker)</h3>
+      <pre><code class="language-javascript">// sw.js — receive push event
+self.addEventListener('push', (event) => {
+  const data = event.data?.json() ?? {};
+
+  const options = {
+    body: data.body || 'New notification',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/badge-72.png',
+    image: data.image,
+    vibrate: [200, 100, 200],
+    tag: data.tag || 'default',  // group
+    renotify: true,
+    actions: [
+      { action: 'open', title: 'Open App' },
+      { action: 'dismiss', title: 'Dismiss' }
+    ],
+    data: { url: data.url || '/' }
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(
+      data.title || 'App Update', options
+    )
+  );
+});</code></pre>
+      <h3>3. Handle Click</h3>
+      <pre><code class="language-javascript">self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  if (e.action === 'open' || !e.action) {
+    e.waitUntil(
+      clients.openWindow(e.notification.data.url)
+    );
+  }
+});</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 16 — PROGRESSIVE WEB APPS ============ -->
+<section>
+  <div class="slide-hdr"><span class="tag">16</span><h2>Progressive Web Apps</h2></div>
+  <div class="cols cols-6040">
+    <div>
+      <h3>manifest.json</h3>
+      <pre><code class="language-json">{
+  "name": "My Awesome App",
+  "short_name": "AwesomeApp",
+  "description": "A full-featured PWA",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#f5a623",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}</code></pre>
+      <pre><code class="language-html">&lt;!-- Link in HTML head --&gt;
+&lt;link rel="manifest" href="/manifest.json"&gt;
+&lt;meta name="theme-color" content="#f5a623"&gt;</code></pre>
+    </div>
+    <div>
+      <div class="card amber">
+        <h3>PWA Installability Criteria</h3>
+        <ul>
+          <li>Served over <span class="g">HTTPS</span></li>
+          <li>Has a <span class="a">web app manifest</span> with required fields</li>
+          <li>Registers a <span class="p">service worker</span> with a fetch handler</li>
+          <li>Icons at 192px and 512px</li>
+          <li><code>start_url</code> is cacheable / works offline</li>
+        </ul>
+      </div>
+      <div class="card green" style="margin-top:.3em;">
+        <h3>Install Prompt</h3>
+        <pre><code class="language-javascript">let deferredPrompt;
+window.addEventListener(
+  'beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    showInstallButton();
+  }
+);
+
+installBtn.onclick = async () => {
+  deferredPrompt.prompt();
+  const { outcome } = await
+    deferredPrompt.userChoice;
+  console.log(outcome); // 'accepted'
+};</code></pre>
+      </div>
+      <div class="card purple" style="margin-top:.3em;">
+        <h3>Display Modes</h3>
+        <p><code>fullscreen</code> &middot; <code>standalone</code> &middot; <code>minimal-ui</code> &middot; <code>browser</code></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 17 — WORKBOX ============ -->
+<section>
+  <div class="slide-hdr"><span class="tag">17</span><h2>Workbox &mdash; Google's SW Toolkit</h2></div>
+  <p><span class="a">Workbox</span> provides production-ready modules for common service worker patterns &mdash; routing, caching strategies, precaching, background sync, and more.</p>
+  <div class="cols cols-2">
+    <div>
+      <h3>Using Workbox via CDN</h3>
+      <pre><code class="language-javascript">// sw.js — import Workbox from CDN
+importScripts(
+  'https://storage.googleapis.com/workbox-cdn' +
+  '/releases/7.0.0/workbox-sw.js'
+);
+
+const { registerRoute } = workbox.routing;
+const { CacheFirst, StaleWhileRevalidate, NetworkFirst }
+  = workbox.strategies;
+const { precacheAndRoute } = workbox.precaching;
+const { ExpirationPlugin } = workbox.expiration;
+
+// Precache app shell (generated by build tool)
+precacheAndRoute(self.__WB_MANIFEST || []);
+
+// Cache images: cache-first, max 60, 30 days
+registerRoute(
+  ({ request }) => request.destination === 'image',
+  new CacheFirst({
+    cacheName: 'images',
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 60,
+        maxAgeSeconds: 30 * 24 * 60 * 60,
+      }),
+    ],
+  })
+);</code></pre>
+    </div>
+    <div>
+      <h3>Route-Based Strategies</h3>
+      <pre><code class="language-javascript">// CSS/JS: stale-while-revalidate
+registerRoute(
+  ({ request }) =>
+    request.destination === 'style' ||
+    request.destination === 'script',
+  new StaleWhileRevalidate({
+    cacheName: 'static-resources',
+  })
+);
+
+// API calls: network-first with timeout
+registerRoute(
+  ({ url }) => url.pathname.startsWith('/api/'),
+  new NetworkFirst({
+    cacheName: 'api-cache',
+    networkTimeoutSeconds: 3,
+  })
+);
+
+// Navigation: network-first with offline fallback
+import { NavigationRoute } from 'workbox-routing';
+import { NetworkFirst } from 'workbox-strategies';
+
+const navHandler = new NetworkFirst({
+  cacheName: 'navigations',
+});
+registerRoute(new NavigationRoute(navHandler));</code></pre>
+      <div class="card green" style="margin-top:.3em;">
+        <h3>Build Integration</h3>
+        <p><code>workbox-cli</code>, <code>workbox-webpack-plugin</code>, and <code>workbox-build</code> generate the precache manifest automatically at build time.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 18 — DEBUGGING WORKERS ============ -->
+<section>
+  <div class="slide-hdr"><span class="tag">18</span><h2>Debugging Workers</h2></div>
+  <div class="cols cols-2">
+    <div>
+      <div class="card amber">
+        <h3>Chrome DevTools</h3>
+        <ul>
+          <li><span class="a">Application &gt; Service Workers</span> &mdash; view status, skip waiting, unregister</li>
+          <li><span class="a">Application &gt; Cache Storage</span> &mdash; inspect cached items</li>
+          <li><span class="g">Sources panel</span> &mdash; set breakpoints in worker scripts</li>
+          <li><span class="b">Network panel</span> &mdash; see which requests served from SW (gear icon: "from ServiceWorker")</li>
+          <li><code>chrome://inspect/#service-workers</code> &mdash; all registered SWs</li>
+          <li><code>chrome://serviceworker-internals</code> &mdash; detailed internal state</li>
+        </ul>
+      </div>
+      <div class="card green" style="margin-top:.3em;">
+        <h3>DevTools Tips</h3>
+        <ul>
+          <li>Check <span class="a">"Update on reload"</span> during development</li>
+          <li>Use <span class="a">"Offline"</span> checkbox to test offline behavior</li>
+          <li>Application &gt; Storage &gt; <span class="a">"Clear site data"</span> for fresh start</li>
+          <li>Lighthouse PWA audit checks installability</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <h3>Logging Strategies</h3>
+      <pre><code class="language-javascript">// Conditional logging for workers
+const DEBUG = true;
+const log = (...args) => {
+  if (DEBUG) console.log('[SW]', ...args);
+};
+
+self.addEventListener('fetch', (e) => {
+  log('Fetch:', e.request.url);
+  // ...
+});</code></pre>
+      <div class="card purple" style="margin-top:.3em;">
+        <h3>Dedicated Worker Debugging</h3>
+        <pre><code class="language-javascript">// Workers appear in Sources panel
+// under "Threads" section
+
+// Use console.log in worker
+self.onmessage = (e) => {
+  console.log('Worker received:', e.data);
+  console.time('processing');
+  // ... work ...
+  console.timeEnd('processing');
+};</code></pre>
+      </div>
+      <div class="card red" style="margin-top:.3em;">
+        <h3>Common Pitfalls</h3>
+        <ul>
+          <li>SW cached an old version &mdash; use versioned cache names</li>
+          <li>Scope mismatch &mdash; check <code>reg.scope</code> vs expected</li>
+          <li><code>event.waitUntil()</code> not used &mdash; SW killed mid-operation</li>
+          <li>Not cloning responses before caching (<code>response.clone()</code>)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 19 — PERFORMANCE PATTERNS ============ -->
+<section>
+  <div class="slide-hdr"><span class="tag">19</span><h2>Performance Patterns</h2></div>
+  <div class="cols cols-2">
+    <div class="card amber">
+      <h3>Worker Pools</h3>
+      <p>Spin up N workers to parallelize work across CPU cores.</p>
+      <pre><code class="language-javascript">class WorkerPool {
+  constructor(script, size = navigator.hardwareConcurrency) {
+    this.workers = Array.from({ length: size },
+      () => new Worker(script));
+    this.queue = [];
+    this.free = [...this.workers];
+  }
+
+  exec(data) {
+    return new Promise((resolve) => {
+      const task = { data, resolve };
+      const w = this.free.pop();
+      if (w) this._run(w, task);
+      else this.queue.push(task);
+    });
+  }
+
+  _run(worker, task) {
+    worker.onmessage = (e) => {
+      task.resolve(e.data);
+      const next = this.queue.shift();
+      if (next) this._run(worker, next);
+      else this.free.push(worker);
+    };
+    worker.postMessage(task.data);
+  }
+}</code></pre>
+    </div>
+    <div class="card green">
+      <h3>Comlink &mdash; RPC for Workers</h3>
+      <p>Google's library wraps <code>postMessage</code> with Proxy-based RPC. Call worker functions as if they were local async functions.</p>
+      <pre><code class="language-javascript">// worker.js
+import * as Comlink from 'comlink';
+
+const api = {
+  fibonacci(n) {
+    if (n <= 1) return n;
+    return api.fibonacci(n-1) + api.fibonacci(n-2);
+  },
+  async processImage(data) { /* ... */ }
+};
+Comlink.expose(api);
+
+// main.js
+import * as Comlink from 'comlink';
+const api = Comlink.wrap(
+  new Worker('worker.js', { type: 'module' })
+);
+const result = await api.fibonacci(42); // magic!</code></pre>
+    </div>
+    <div class="card purple">
+      <h3>OffscreenCanvas</h3>
+      <p>Render canvas graphics in a worker &mdash; no main thread cost.</p>
+      <pre><code class="language-javascript">// main.js
+const canvas = document.getElementById('c');
+const offscreen = canvas.transferControlToOffscreen();
+worker.postMessage({ canvas: offscreen }, [offscreen]);
+
+// worker.js — render loop off main thread
+self.onmessage = ({ data }) => {
+  const ctx = data.canvas.getContext('2d');
+  function draw() { /* ... */ requestAnimationFrame(draw); }
+  draw();
+};</code></pre>
+    </div>
+    <div class="card blue">
+      <h3>SharedArrayBuffer</h3>
+      <p>True shared memory between threads. Requires <code>Cross-Origin-Isolation</code> headers. Use <code>Atomics</code> for synchronization.</p>
+      <pre><code class="language-javascript">// Shared memory between main + worker
+const sab = new SharedArrayBuffer(1024);
+const arr = new Int32Array(sab);
+worker.postMessage({ buffer: sab });
+
+// Worker: Atomics for thread-safe ops
+Atomics.add(arr, 0, 1);
+Atomics.wait(arr, 0, expectedVal);
+Atomics.notify(arr, 0);</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 20 — SUMMARY & NEXT STEPS ============ -->
+<section>
+  <div class="slide-hdr"><span class="tag">20</span><h2>Summary &amp; Next Steps</h2></div>
+  <div class="cols cols-3">
+    <div class="card amber">
+      <h3>Dedicated Workers</h3>
+      <ul>
+        <li>Offload CPU-heavy tasks</li>
+        <li>Message passing via <code>postMessage</code></li>
+        <li>Transfer large data with transferables</li>
+        <li>Use worker pools for parallelism</li>
+        <li>Comlink for ergonomic RPC</li>
+      </ul>
+    </div>
+    <div class="card green">
+      <h3>Service Workers</h3>
+      <ul>
+        <li>Proxy between browser &amp; network</li>
+        <li>Lifecycle: install &rarr; activate &rarr; fetch</li>
+        <li>Cache API for offline support</li>
+        <li>Strategies: cache-first, network-first, SWR</li>
+        <li>Push notifications &amp; background sync</li>
+      </ul>
+    </div>
+    <div class="card purple">
+      <h3>PWA Ecosystem</h3>
+      <ul>
+        <li>manifest.json for installability</li>
+        <li>App shell model for instant loads</li>
+        <li>Workbox for production-ready SW</li>
+        <li>Lighthouse for PWA auditing</li>
+        <li>OffscreenCanvas &amp; SharedArrayBuffer</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card blue" style="margin-top:.4em;">
+    <h3>Further Reading &amp; Resources</h3>
+    <div class="cols cols-2">
+      <ul>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API" style="color:var(--blue);">MDN &mdash; Web Workers API</a></li>
+        <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API" style="color:var(--blue);">MDN &mdash; Service Worker API</a></li>
+        <li><a href="https://web.dev/learn/pwa" style="color:var(--blue);">web.dev &mdash; Learn PWA</a></li>
+      </ul>
+      <ul>
+        <li><a href="https://developer.chrome.com/docs/workbox/" style="color:var(--blue);">Chrome Developers &mdash; Workbox</a></li>
+        <li><a href="https://github.com/nicolo-ribaudo/tc39-proposal-structs" style="color:var(--blue);">TC39 Shared Structs Proposal</a></li>
+        <li><a href="https://github.com/nicolo-nicolo/nicolo-nicolo.github.io" style="color:var(--blue);"><span class="mono">Comlink</span> &mdash; github.com/nicolo-nicolo</a></li>
+      </ul>
+    </div>
+  </div>
+  <p style="text-align:center; color:var(--muted); margin-top:.4em;">
+    <span class="pill amber">Workers</span>
+    <span class="pill green">Service Workers</span>
+    <span class="pill purple">Cache API</span>
+    <span class="pill blue">PWA</span>
+  </p>
+</section>
+
+</div><!-- /slides -->
+</div><!-- /reveal -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/plugin/highlight/highlight.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/plugin/highlight/monokai.min.css">
+<script>
+Reveal.initialize({
+  hash: true,
+  transition: 'fade',
+  transitionSpeed: 'fast',
+  controls: true,
+  progress: true,
+  center: false,
+  width: 1100,
+  height: 900,
+  margin: 0.01,
+  plugins: [RevealHighlight],
+  highlight: { theme: 'monokai' }
+});
+</script>
+<script>
+(function(){
+  var h = Reveal.getConfig().height || 900;
+  var m = Reveal.getConfig().margin || 0.02;
+  var maxH = Math.floor(h * (1 - 2 * m)) + 'px';
+  function fixSlides(){
+    document.querySelectorAll('.reveal .slides>section,.reveal .slides>section>section').forEach(function(s){
+      s.style.display = 'block';
+      s.style.maxHeight = maxH;
+    });
+  }
+  Reveal.on('ready', fixSlides);
+  Reveal.on('slidechanged', fixSlides);
+})();
+</script>
+</body>
+</html>
