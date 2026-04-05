@@ -48,6 +48,8 @@ An interactive Reveal.js presentation covering Web Workers — dedicated workers
 
 Single self-contained `index.html` — no build step, no npm, no dependencies to install.
 
+A comprehensive markdown version of the presentation is also available: [`presentation.md`](presentation.md)
+
 ## References
 
 - [MDN — Web Workers API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API)
